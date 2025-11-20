@@ -92,6 +92,10 @@ export function TeachingCanvas() {
         return `Vertex ${id} already exists`;
       }
 
+      // Add delay based on number of existing vertices for sequential appearance
+      const delayTime = graph.vertices.length * 600; // 600ms delay per existing vertex
+      await new Promise((resolve) => setTimeout(resolve, delayTime));
+
       // Center the circle at x,y (radius is 25)
       const circle = new fabric.Circle({
         left: x - 25,
@@ -186,65 +190,139 @@ export function TeachingCanvas() {
         return `Edge from ${from} to ${to} already exists`;
       }
 
-      // Create line connecting center points of vertices
-      const line = new fabric.Line([fromV.x, fromV.y, toV.x, toV.y], {
+      // Calculate angle and distance
+      const dx = toV.x - fromV.x;
+      const dy = toV.y - fromV.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx);
+
+      // Create line that starts at fromV and will animate to toV
+      const line = new fabric.Line([fromV.x, fromV.y, fromV.x, fromV.y], {
         stroke: "#4a9eff",
         strokeWidth: 2,
         selectable: false,
         evented: false,
       });
 
-      // Add line to back so it appears behind vertices
+      // Add line to canvas
       fabricCanvas.add(line);
       fabricCanvas.sendObjectToBack(line);
 
       edgeObjects.current.set(edgeId, line);
 
-      // Add arrow if directed
-      if (directed) {
-        const angle = Math.atan2(toV.y - fromV.y, toV.x - fromV.x);
-        const arrowSize = 12;
-        const arrowX = toV.x - Math.cos(angle) * 30;
-        const arrowY = toV.y - Math.sin(angle) * 30;
+      // Wait for vertices to be fully rendered before drawing edge
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-        const arrow = new fabric.Triangle({
-          left: arrowX,
-          top: arrowY,
-          width: arrowSize,
-          height: arrowSize,
-          fill: "#4a9eff",
-          angle: (angle * 180) / Math.PI + 90,
-          selectable: false,
-          evented: false,
-          originX: "center",
-          originY: "center",
-        });
+      // Create pencil icon using Image
+      const pencilImg = new Image();
+      pencilImg.crossOrigin = "anonymous"; // Enable CORS for external images
+      //   pencilImg.src = 'data:image/svg+xml,' + encodeURIComponent(`
+      //     <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      //       <path d="M27 4l-3-3-17 17v3h3l17-17zm-3 0l3 3" stroke="#FFD700" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      //       <rect x="1" y="21" width="4" height="4" fill="#FFD700" stroke="#333" stroke-width="1"/>
+      //     </svg>
+      //   `);
+      pencilImg.src = "/maths/venugopal.png";
 
-        fabricCanvas.add(arrow);
-      }
+      // Wait for image to load before creating fabric object
+      await new Promise((resolve) => {
+        pencilImg.onload = resolve;
+        // Fallback if image fails to load
+        setTimeout(resolve, 100);
+      });
 
-      // Add weight label if provided
-      if (weight !== undefined) {
-        const midX = (fromV.x + toV.x) / 2;
-        const midY = (fromV.y + toV.y) / 2;
+      const pencil = new fabric.Image(pencilImg, {
+        left: fromV.x,
+        top: fromV.y,
+        angle: 0, // Keep original image angle (no rotation)
+        originX: "center",
+        originY: "center",
+        scaleX: 0.1, // Reduce to 10% of original size
+        scaleY: 0.1, // Reduce to 10% of original size
+        selectable: false,
+        evented: false,
+      });
 
-        const weightText = new fabric.Text(weight.toString(), {
-          left: midX,
-          top: midY - 15,
-          fontSize: 14,
-          fill: "#ffeb3b",
-          backgroundColor: "rgba(0,0,0,0.7)",
-          padding: 3,
-          selectable: false,
-          evented: false,
-          originX: "center",
-          originY: "center",
-        });
-
-        fabricCanvas.add(weightText);
-      }
-
+      // Add pencil to canvas
+      fabricCanvas.add(pencil);
       fabricCanvas.renderAll();
+
+      // Animate the line drawing with pencil moving along
+      const startTime = Date.now();
+      const duration = 1000;
+
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Update line endpoint
+        const currentX = fromV.x + dx * progress;
+        const currentY = fromV.y + dy * progress;
+        line.set({ x2: currentX, y2: currentY });
+
+        // Update pencil position and angle
+        pencil.set({
+          left: currentX,
+          top: currentY,
+        });
+
+        fabricCanvas.renderAll();
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          // Remove pencil when done
+          fabricCanvas.remove(pencil);
+
+          // Add arrow if directed (after animation completes)
+          if (directed) {
+            const arrowAngle = Math.atan2(toV.y - fromV.y, toV.x - fromV.x);
+            const arrowSize = 12;
+            const arrowX = toV.x - Math.cos(arrowAngle) * 30;
+            const arrowY = toV.y - Math.sin(arrowAngle) * 30;
+
+            const arrow = new fabric.Triangle({
+              left: arrowX,
+              top: arrowY,
+              width: arrowSize,
+              height: arrowSize,
+              fill: "#4a9eff",
+              angle: (arrowAngle * 180) / Math.PI + 90,
+              selectable: false,
+              evented: false,
+              originX: "center",
+              originY: "center",
+            });
+
+            fabricCanvas.add(arrow);
+          }
+
+          // Add weight label if provided (after animation completes)
+          if (weight !== undefined) {
+            const midX = (fromV.x + toV.x) / 2;
+            const midY = (fromV.y + toV.y) / 2;
+
+            const weightText = new fabric.Text(weight.toString(), {
+              left: midX,
+              top: midY - 15,
+              fontSize: 14,
+              fill: "#ffeb3b",
+              backgroundColor: "rgba(0,0,0,0.7)",
+              padding: 3,
+              selectable: false,
+              evented: false,
+              originX: "center",
+              originY: "center",
+            });
+
+            fabricCanvas.add(weightText);
+          }
+
+          fabricCanvas.renderAll();
+        }
+      };
+
+      animate();
 
       // Update state
       setGraph((prev) => ({
