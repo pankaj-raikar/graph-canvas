@@ -41,7 +41,7 @@ export function TeachingCanvas() {
     const canvas = new fabric.Canvas(canvasRef.current, {
       width: 800,
       height: 600,
-      backgroundColor: "#1a1a1a",
+      backgroundColor: "#ffffff",
     });
     setFabricCanvas(canvas);
 
@@ -190,6 +190,10 @@ export function TeachingCanvas() {
         return `Edge from ${from} to ${to} already exists`;
       }
 
+      // Add delay based on number of existing edges for sequential drawing
+      const delayTime = graph.edges.length * 1200; // 1200ms delay per existing edge
+      await new Promise((resolve) => setTimeout(resolve, delayTime));
+
       // Calculate angle and distance
       const dx = toV.x - fromV.x;
       const dy = toV.y - fromV.y;
@@ -222,7 +226,7 @@ export function TeachingCanvas() {
       //       <rect x="1" y="21" width="4" height="4" fill="#FFD700" stroke="#333" stroke-width="1"/>
       //     </svg>
       //   `);
-      pencilImg.src = "/maths/venugopal.png";
+      pencilImg.src = "/maths/venugopal-croped.png";
 
       // Wait for image to load before creating fabric object
       await new Promise((resolve) => {
@@ -237,8 +241,8 @@ export function TeachingCanvas() {
         angle: 0, // Keep original image angle (no rotation)
         originX: "center",
         originY: "center",
-        scaleX: 0.1, // Reduce to 10% of original size
-        scaleY: 0.1, // Reduce to 10% of original size
+        scaleX: 0.15,
+        scaleY: 0.15,
         selectable: false,
         evented: false,
       });
@@ -344,7 +348,7 @@ export function TeachingCanvas() {
       if (!fabricCanvas) return "Canvas not initialized";
 
       fabricCanvas.clear();
-      fabricCanvas.backgroundColor = "#1a1a1a";
+      fabricCanvas.backgroundColor = "#ffffff";
       fabricCanvas.renderAll();
 
       vertexObjects.current.clear();

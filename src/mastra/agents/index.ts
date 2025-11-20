@@ -10,7 +10,8 @@ export const AgentState = z.object({
   proverbs: z.array(z.string()).default([]),
 });
 
-const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY || "", baseURL: "https://api.megallm.com/v1" });
+const openai = createOpenAI({ apiKey: "sk-mega-24d48d1e8a160835411f0dde86c4fcc425dfc701f5b1b8513481ded14402b020", baseURL: "https://ai.megallm.io/v1" });
+
 
 export const weatherAgent = new Agent({
   name: "Weather Agent",
@@ -87,7 +88,7 @@ AVAILABLE ACTIONS (call these directly):
 Remember: Vertices MUST exist before edges can connect them! Always check available vertex IDs first.
 `,
 
-  model: "google/gemini-2.0-flash-lite",
+  model: groq("meta-llama/llama-4-scout-17b-16e-instruct"),
   memory: new Memory({
     storage: new LibSQLStore({ url: "file::memory:" }),
   }),

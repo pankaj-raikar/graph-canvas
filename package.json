@@ -24,6 +24,7 @@
     "@mastra/core": "0.20.2",
     "@mastra/libsql": "0.15.1",
     "@mastra/memory": "0.15.6",
+    "ai": "^5.0.97",
     "fabric": "^6.9.0",
     "framer-motion": "^12.23.24",
     "graphology": "^0.26.0",
